@@ -26,20 +26,8 @@ print(diffs[1]*diffs[3])
 
 #Part 2...
 
-def next_part_slow(pos, chain):
-    for next_pos in range(pos+1, len(chargers)):
-        if chargers[next_pos] - chargers[pos] <= 3:
-            current_chain = chain + (next_pos,)
-            if next_pos == len(chargers)-1:
-                #this is the end!
-                yield current_chain
-                return
-            for full_chain in next_part(next_pos, current_chain):
-                yield full_chain
-
 count_cache = {}
 def next_part(pos):
-    global count
     if pos in count_cache:
         return count_cache[pos]
 
@@ -49,10 +37,10 @@ def next_part(pos):
             #current_chain = chain + (next_pos,)
             if next_pos == len(chargers)-1:
                 #this is the end!
-                count += 1
-                return count
+                return count +1
             count += next_part(next_pos)
     count_cache[pos] = count
+    print(f'{pos=} {count=}')
     return count
 
 
