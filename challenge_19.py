@@ -1,8 +1,9 @@
 data = []
 rules_text = {}
 rules = {}
+import itertools
 
-with open('challenge_19_example1') as file:
+with open('challenge_19') as file:
     parsing_rules = True
     for line in file:
         line = line.strip()
@@ -26,10 +27,11 @@ class Text:
     def match(self, target):
         if target.startswith(self.text):
             #print(f'Match text {self.text} for target "{target}"')
-            return True, target[len(self.text):]
+            yield target[len(self.text):]
         else:
             #print(f'No Match text {self.text} for target "{target}"')
-            return False, target
+            #return False, target
+            pass
 
     def __repr__(self):
         return f'Text({self.text})'
@@ -88,16 +90,29 @@ class Rule:
         for rule_list in self.rules:
             current = target
             match = False
-            for rule in rule_list:
-                #print('a',rule,current)
-                match, current = rule.match(current)
 
-                if not match:
-                    break
-            if match:
+            stack = (target,)
+            for rule in rule_list:
+                #print(stack)
+                new_stack = []
+                for item in stack:
+                    new_stack = itertools.chain(new_stack, (rest for rest in rule.match(item)))
+                stack = new_stack
+
+            for item in stack:
+                yield item
+                # new_stack = []
+                # for item in stack:
+                #     for rest in rule.match(item):
+                #         new_stack.append(rest)
+                #         yield rest
+
+                # stack = new_stack
+
+            #if match:
                 #print(f'Match {self} for target "{target}"')
-                return match, current
-        return False, target
+                #return match, current
+        #return False, target
 
     def __repr__(self):
         out = []
@@ -112,21 +127,26 @@ def match_rule_zero():
 
     count = 0
     for line in data:
-        match, rest = rules[0].match(line)
-        if match and not rest:
-            print('***',line)
-            count += 1
+        for rest in rules[0].match(line):
+            if not rest:
+                print('***',line)
+                count += 1
+                break
 
     return count
 
 def expand(n, text):
     out = []
     current = text
-    for i in range(100):
+    for i in range(5):
         current = current.replace(n, text)
         out.append(current.replace(n, '').strip())
 
     return ' | '.join(out)
+
+#for rest in Rule(rules_text[0]).match('ababbb'):
+#    print(rest)
+#raise SystemExit()
 
 print(f'Part 1 Total {match_rule_zero()}')
 
@@ -135,6 +155,9 @@ rules = {}
 rules_text[11] = '42 31 | ' + expand('11', '42 11 31')
 rules_text[8] = '42 | ' + expand('8', '42 8')
 
-print(Rule(rules_text[8]).match('babbbbaabbbbbabbbbbbaabaaabaaa'))
+#rules_text[11] = '42 31 | 42 42 31 31'
+#rules_text[8] = '42 | 42 42'
+
+#for match, rest in Rule(rules_text[8]).match('babbbbaabbbbbabbbbbbaabaaabaaa')
 
 print(f'Part 2 Total {match_rule_zero()}')
