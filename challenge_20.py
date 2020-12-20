@@ -178,7 +178,6 @@ product = 1
 corners = {}
 for tile in tiles:
     if num_unknown(tile) == 2:
-
         # We can start with any corner, it shouldn't matter
         corners[tile.id] = tile
 
@@ -230,4 +229,4 @@ grid = Grid(grid)
 
 roughness = grid.get_roughness()
 
-print(f'Part 2 : roughness')
+print(f'Part 2 : {roughness}')
