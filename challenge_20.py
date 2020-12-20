@@ -82,6 +82,7 @@ class Grid(Tile):
 
         self.width = (tile_width-2) * len(tiles)
         self.height = (tile_height-2) * len(tiles[0])
+        print(f'Grid width = {self.width} height = {self.height}')
 
         for y in range(len(tiles[0])):
             for line_y in range(1, tile_height - 1):
@@ -96,9 +97,6 @@ class Grid(Tile):
         self.total_bits = sum(f'{row:b}'.count('1') for row in self.rows)
         self.total_monster_bits = sum(f'{row:b}'.count('1') for row in self.monster_bits)
 
-    def flip_horizontal(self):
-        self.rows = [bit_reverse(row, self.width) for row in self.rows]
-
     def flip_vertical(self):
         self.rows = self.rows[::-1]
 
@@ -109,7 +107,7 @@ class Grid(Tile):
         #Can sea monster overlap? If not roughness is easy to calculate. Let's do that
 
         for row_num in range(self.height - len(self.monster_bits)):
-            for x in range(self.width - len(self.monster_pattern)):
+            for x in range(self.width - len(self.monster_pattern[0])):
                 for i,monster_row in enumerate(self.monster_bits):
                     if monster_row != ((self.rows[row_num + i] >> x) & monster_row):
                         break
@@ -122,19 +120,14 @@ class Grid(Tile):
     def get_roughness(self):
         #Find a configuration where there are some monsters. There's a bit of redundancy here
         for horiz in (0,1):
-            for vert in (0,1):
-                for rotate in range(4):
-                    n, roughness = self.count_monsters()
+            for rotate in range(4):
+                n, roughness = self.count_monsters()
 
-                    if n:
-                        print(f'Got {n} matches')
-                        return roughness
-                    self.rotate(1)
-                    print('rotate')
-                self.flip_vertical()
-                print('flip_vertical')
-            self.flip_horizontal()
-            print('flip_horizontal')
+                if n:
+                    print(f'Got {n} matches')
+                    return roughness
+                self.rotate(1)
+            self.flip_vertical()
 
     def __repr__(self):
         out = []
@@ -193,7 +186,6 @@ for tile in tiles:
 #We now need a set of corners with consistent unknown edges
 corners = corners.values()
 for corner in corners:
-    print([is_unknown(edge) for edge in corner.edges])
     product *= corner.id
 
 print(f'Part 1: {product}')
@@ -208,7 +200,7 @@ while not (is_unknown(corner.top) and is_unknown(corner.left)):
     corner.rotate(1)
 
 print(f'Chosen corner top left {corner.id}')
-#print(corner)
+
 for y in range(grid_height):
     for x in range(grid_width):
         if x == y == 0:
@@ -227,23 +219,15 @@ for y in range(grid_height):
             while tile.top != bit_reverse(above.bottom, above.width):
                 tile.rotate(1)
         else:
-            candidates = [tile for tile in edges[to_left.right] if tile.id != to_left.id]
+            candidates = [tile for tile in edges[bit_reverse(to_left.right, to_left.height)] if tile.id != to_left.id]
             tile = candidates[0]
-            while tile.left != to_left.right:
+            while tile.left != bit_reverse(to_left.right, to_left.height):
                 tile.rotate(1)
 
         grid[x][y] = tile
-        print(f'Placed tile {tile.id} at grid position {x} {y}')
-
-#Let's make the whole grid and print it
 
 grid = Grid(grid)
 
-#grid.flip_vertical()
-#grid.flip_horizontal()
-#for i in range(3):
-#    grid.rotate(1)
+roughness = grid.get_roughness()
 
-print(grid)
-
-print(f'Part 2 : {grid.get_roughness()}')
+print(f'Part 2 : roughness')
