@@ -1,9 +1,9 @@
 import re
 import math
 
-translation = ''.maketrans('#.','10')
+translation = ''.maketrans('#. ','100')
 
-def parse_row(line, width):
+def parse_row(line):
     return int(line.translate(translation), 2)
 
 def flip_horizontal(lines):
@@ -25,7 +25,7 @@ class Tile:
         self.flipped_horiz=flipped_horiz
         self.flipped_vertical=flipped_vertical
 
-        self.rows = [parse_row(line, self.width) for line in lines[1:]]
+        self.rows = [parse_row(line) for line in lines[1:]]
 
         self.set_edges()
 
@@ -68,8 +68,85 @@ class Tile:
         return '\n'.join(out)
 
 
+class Grid(Tile):
+    monster_pattern = ['                  # ',
+                       '#    ##    ##    ###',
+                       ' #  #  #  #  #  #   ']
+    def __init__(self, tiles):
 
-with open('challenge_20_example','r') as file:
+        self.rows = []
+
+        tile_height = tiles[0][0].height
+        tile_width = tiles[0][0].width
+        n_mask = (1 << (tile_width - 2))-1
+
+        self.width = (tile_width-2) * len(tiles)
+        self.height = (tile_height-2) * len(tiles[0])
+
+        for y in range(len(tiles[0])):
+            for line_y in range(1, tile_height - 1):
+                num = 0
+                for col in tiles:
+                    num <<= (tile_width - 2)
+                    num |= (col[y].rows[line_y] >> 1) & n_mask
+
+                self.rows.append(num)
+
+        self.monster_bits = [parse_row(row) for row in self.monster_pattern]
+        self.total_bits = sum(f'{row:b}'.count('1') for row in self.rows)
+        self.total_monster_bits = sum(f'{row:b}'.count('1') for row in self.monster_bits)
+
+    def flip_horizontal(self):
+        self.rows = [bit_reverse(row, self.width) for row in self.rows]
+
+    def flip_vertical(self):
+        self.rows = self.rows[::-1]
+
+    def count_monsters(self):
+        count = 0
+        roughness = 0
+
+        #Can sea monster overlap? If not roughness is easy to calculate. Let's do that
+
+        for row_num in range(self.height - len(self.monster_bits)):
+            for x in range(self.width - len(self.monster_pattern)):
+                for i,monster_row in enumerate(self.monster_bits):
+                    if monster_row != ((self.rows[row_num + i] >> x) & monster_row):
+                        break
+                else:
+                    count += 1
+
+        return count, self.total_bits - count*self.total_monster_bits
+
+
+    def get_roughness(self):
+        #Find a configuration where there are some monsters. There's a bit of redundancy here
+        for horiz in (0,1):
+            for vert in (0,1):
+                for rotate in range(4):
+                    n, roughness = self.count_monsters()
+
+                    if n:
+                        print(f'Got {n} matches')
+                        return roughness
+                    self.rotate(1)
+                    print('rotate')
+                self.flip_vertical()
+                print('flip_vertical')
+            self.flip_horizontal()
+            print('flip_horizontal')
+
+    def __repr__(self):
+        out = []
+
+        for row in self.rows:
+            format = '{row:0%db}' % self.width
+            out.append(format.format(row=row))
+        return '\n'.join(out)
+
+
+
+with open('challenge_20','r') as file:
     data = file.read().split('\n\n')
 
 data = [text.split('\n') for text in data]
@@ -159,15 +236,14 @@ for y in range(grid_height):
         print(f'Placed tile {tile.id} at grid position {x} {y}')
 
 #Let's make the whole grid and print it
-lines = []
-for y in range(grid_height):
 
-    for line_y in range(corner.height):
-        line = []
-        for col in grid:
-            line.append('{num:010b}'.format(num=col[y].rows[line_y]))
-        lines.append(' '.join(line))
-    lines.append('')
+grid = Grid(grid)
 
-lines = '\n'.join(lines)
-print(lines)
+#grid.flip_vertical()
+#grid.flip_horizontal()
+#for i in range(3):
+#    grid.rotate(1)
+
+print(grid)
+
+print(f'Part 2 : {grid.get_roughness()}')
