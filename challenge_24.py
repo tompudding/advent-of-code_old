@@ -51,13 +51,16 @@ def step(tiles):
     for set_tile in tiles:
         tile_neighbours = {dir(set_tile) for dir in directions.values()}
         count = sum([neighbour in tiles for neighbour in tile_neighbours])
-        if count == 1:
+        if 1 <= count <= 2:
             # this will remain set
             new_tiles[set_tile] = 1
         neighbours |= tile_neighbours
 
     # Neighbours is now the set of tiles that border a set tile and thus may get turned on
     for unset_tile in neighbours:
+        if unset_tile in tiles:
+            # This one was actually set
+            continue
         tile_neighbours = {dir(unset_tile) for dir in directions.values()}
         count = sum([neighbour in tiles for neighbour in tile_neighbours])
         if count == 2:
